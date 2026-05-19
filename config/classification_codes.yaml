@@ -1,0 +1,828 @@
+# =============================================================================
+# カメラ修理データ 故障現象分類コード体系
+# =============================================================================
+# 用途: Difyを介してLLMが修理データを分類する際の判定基準
+# 注意: 全コードのdescriptionはAI推測の叩き台です。運用者レビュー必須。
+#       レビュー後は description_status を "verified" に変更してください。
+# =============================================================================
+
+meta:
+  version: "0.2.0"
+  source: "故障分類.csv"
+  created_at: "2026-04-29"
+  total_codes:
+    ML: 46     # ミラーレスカメラ（電源SW不具合の重複統合後）
+    LENS: 36   # 交換レンズ
+  description_status: "ai_inferred"
+  notes: |
+    - 全項目のdescriptionはAI推測。実運用前に運用者レビュー必須。
+    - record_type で「故障 (failure)」と「サービス (service)」を区別。
+    - センサー内/外、ファインダー内/外はメーカー責任判定の重要分類。
+    - 製品種別（ML/LENS）はSQL段階で判定済みの前提。
+    - v0.2.0: ユーザ視点/修理者視点の2軸分類、reproduction_status属性を追加。
+  changelog:
+    - version: "0.2.0"
+      date: "2026-04-29"
+      changes:
+        - "ユーザ視点・修理者視点の2軸分類ルールを追加"
+        - "reproduction_statuses（再現状況）セクションを新規追加"
+        - "再現せず時は修理者視点にユーザ訴えの分類を入れるルールを追加"
+        - "出力スキーマ参考例を追加"
+    - version: "0.1.0"
+      date: "2026-04-29"
+      changes:
+        - "初版。CSV由来のML 46項目、LENS 36項目を採番、AI推測でdescription記入"
+
+# =============================================================================
+# 製品種別ごとの故障分類
+# =============================================================================
+product_categories:
+
+  # ===========================================================================
+  # ML（ミラーレスカメラ）
+  # ===========================================================================
+  ML:
+    name: "ミラーレスカメラ"
+    failure_categories:
+
+      M001:
+        name: "電源不良"
+        description: "電源が入らない、電源が落ちる、起動しない等、電源系統全般の不具合。電源SWの操作不良はM021に分類。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M002:
+        name: "エラー"
+        description: "操作中にエラーメッセージ・エラーコードが表示される、エラー停止する。具体的な機能不良が特定できない場合のエラー表示も含む。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M003:
+        name: "動作不良"
+        description: "特定の機能・操作が正常に動作しない包括的なカテゴリ。他の具体的な分類に該当しない動作異常。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M004:
+        name: "熱くなる"
+        description: "本体が異常に発熱する、発熱による動作停止や不安定動作が発生する。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M005:
+        name: "AF不良"
+        description: "オートフォーカスが作動しない、合焦しない、迷う、動作不安定等のAF全般の不具合。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M006:
+        name: "ミラー不具合"
+        description: "ミラー機構の動作不良、ミラーアップ・ダウン異常、ミラーの汚れ・損傷等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M007:
+        name: "シャッター不具合"
+        description: "シャッターが切れない、切れっぱなし、シャッター幕の動作異常、シャッター速度異常等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M008:
+        name: "画像不具合"
+        description: "撮影画像の異常（線・点・ノイズ・色再現不良等）。撮像センサー・画像処理に起因する画質問題。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M009:
+        name: "異音"
+        description: "通常動作中・操作中に異常な音が発生する。原因部位は問わず音そのものを訴える分類。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M010:
+        name: "動画撮影時不具合"
+        description: "動画撮影モード固有の不具合（録画停止、音声異常、動画特有の画像不良等）。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M011:
+        name: "メディア不具合"
+        description: "メモリーカード関連の不具合（認識不良、書き込みエラー、データ破損、スロット不良等）。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M012:
+        name: "センサー内ゴミ"
+        description: |
+          撮像センサー内部に侵入したゴミ。製造工程・組立工程で混入した可能性があり、
+          メーカー側の責任範囲とみなす分類。
+          判定不能な場合（内部か表面か特定できない場合）はM013（センサーゴミ）に分類すること。
+        record_type: "failure"
+        responsibility: "manufacturer"
+        description_status: "ai_inferred"
+        decision_rule: "明らかにセンサー内部と判断できる場合のみM012、それ以外はM013"
+
+      M013:
+        name: "センサーゴミ"
+        description: |
+          撮像センサー表面（外側）に付着したゴミ。ユーザー使用環境で付着した可能性があり、
+          メーカー側の責任範囲外とみなす分類。
+          判定不能な場合（センサー内部か表面か特定できない場合）もこちらに分類する。
+        record_type: "failure"
+        responsibility: "user_or_unknown"
+        description_status: "ai_inferred"
+        decision_rule: "迷ったらこちら（メーカー責任外側に倒す）"
+
+      M014:
+        name: "ファインダー内ゴミ"
+        description: |
+          ファインダー内部（光学系内部）に侵入したゴミ。製造・組立工程で混入した可能性があり、
+          メーカー側の責任範囲とみなす分類。
+          判定不能な場合はM015（ファインダーゴミ）に分類すること。
+        record_type: "failure"
+        responsibility: "manufacturer"
+        description_status: "ai_inferred"
+        decision_rule: "明らかにファインダー内部と判断できる場合のみM014、それ以外はM015"
+
+      M015:
+        name: "ファインダーゴミ"
+        description: |
+          ファインダー表面（外側、接眼レンズ表面等）に付着したゴミ。ユーザー使用環境で付着した可能性があり、
+          メーカー側の責任範囲外とみなす分類。
+          判定不能な場合（内部か外部か特定できない場合）もこちらに分類する。
+        record_type: "failure"
+        responsibility: "user_or_unknown"
+        description_status: "ai_inferred"
+        decision_rule: "迷ったらこちら（メーカー責任外側に倒す）"
+
+      M016:
+        name: "ファインダー/EVF表示不具合"
+        description: "ファインダー・電子ビューファインダーの表示異常（表示されない、ノイズ、表示遅延、色異常等）。ゴミ起因はM014/M015。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M017:
+        name: "LCD表示不具合"
+        description: "背面液晶（LCD）の表示異常（表示されない、ノイズ、輝度異常、色異常、ドット抜け、画面割れ等）。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M018:
+        name: "OLC表示不具合"
+        description: "サブ液晶・補助液晶（On-screen Liquid Crystal）の表示異常。肩液晶・トップディスプレイ等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M019:
+        name: "タッチパネル不具合"
+        description: "タッチ操作の反応不良、誤反応、無反応、タッチ位置ズレ等。表示部はM017。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M020:
+        name: "レンズ通信不良"
+        description: "ボディ・レンズ間の通信エラー、レンズ認識不良、装着時のエラー表示等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M021:
+        name: "電源SW不具合"
+        description: "電源スイッチ自体の動作不良（押しても反応しない、感触異常、固着等）。電源系統全般の不具合はM001。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M022:
+        name: "レリーズボタン不具合"
+        description: "シャッターボタン（レリーズボタン）の動作不良（押しても反応しない、半押し効かない、感触異常等）。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M023:
+        name: "電子ダイヤル不具合（メイン）"
+        description: "メイン電子ダイヤル（前ダイヤル等の主要ダイヤル）の操作不良、回転不良、認識不良。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M024:
+        name: "電子ダイヤル不具合（サブ）"
+        description: "サブ電子ダイヤル（後ダイヤル等の補助ダイヤル）の操作不良、回転不良、認識不良。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M025:
+        name: "モードダイヤル不具合"
+        description: "撮影モードダイヤル（M/A/S/P等の選択ダイヤル）の動作不良、認識不良、固着等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M026:
+        name: "背面操作部不具合"
+        description: "背面の各種ボタン・十字キー・コントロールパッド等の操作不良。電子ダイヤル・タッチパネルは別分類。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M027:
+        name: "露出ダイヤル不具合"
+        description: "露出補正ダイヤルの動作不良、認識不良、固着等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M028:
+        name: "ラバー変色"
+        description: "グリップ等のラバー部分の変色・劣化・ベタつき等。外装の経年劣化に分類。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M029:
+        name: "電子水準器不具合"
+        description: "電子水準器の表示異常、傾き検知精度不良等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M030:
+        name: "三脚座不具合"
+        description: "三脚ねじ穴・三脚座の不具合（破損、ガタ、ネジ山潰れ等）。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M031:
+        name: "内蔵ストロボ不具合"
+        description: "内蔵ストロボ（フラッシュ）の発光不良、ポップアップ機構不良、調光異常等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M032:
+        name: "外部ストロボ不具合"
+        description: "外部ストロボ接続時の不具合（ホットシュー認識不良、調光異常、シンクロ不良等）。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M033:
+        name: "USB接続不具合"
+        description: "USB端子・USB接続経由の通信不良、認識不良、充電不良、コネクタ破損等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M034:
+        name: "出力不具合"
+        description: "HDMI等の映像・音声出力端子の不具合。USB接続はM033。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M035:
+        name: "Wi-Fi関連不具合"
+        description: "Wi-Fi接続不良、設定異常、画像転送エラー、リモート撮影不良等のWi-Fi機能関連。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M036:
+        name: "Bluetooth関連不具合"
+        description: "Bluetooth接続不良、ペアリング不良、スマホ連携機能不良等のBluetooth機能関連。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M037:
+        name: "NFC関連不具合"
+        description: "NFC機能の不具合（タッチ反応せず、ペアリング不良等）。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M038:
+        name: "GPS関連不具合"
+        description: "GPS機能の不具合（測位できない、位置情報誤り、GPSログ取得不良等）。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M039:
+        name: "IS駆動不具合"
+        description: "ボディ内手ブレ補正（IBIS/IS）の駆動不良、補正効果なし、異音、エラー表示等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M040:
+        name: "日付設定/電池不良"
+        description: "日付・時刻設定の保持不良、内蔵バックアップ電池の劣化、設定リセット等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      M041:
+        name: "蓋検知SW不具合"
+        description: "電池蓋・メディア蓋等の開閉検知スイッチの不具合。蓋を閉めても認識しない、蓋を開けても反応しない等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      # --- サービス系（故障ではない）---
+      M042:
+        name: "検査"
+        description: "故障ではなく、お客様依頼またはメーカー判断による検査・点検のみの修理データ。"
+        record_type: "service"
+        description_status: "ai_inferred"
+
+      M043:
+        name: "クリーニング"
+        description: "故障ではなく、清掃・クリーニング作業のみの修理データ。"
+        record_type: "service"
+        description_status: "ai_inferred"
+
+      M044:
+        name: "オーバーホール"
+        description: "故障ではなく、定期メンテナンス・オーバーホール作業の修理データ。"
+        record_type: "service"
+        description_status: "ai_inferred"
+
+      M045:
+        name: "ファームアップ"
+        description: "故障ではなく、ファームウェアアップデート作業のみの修理データ。"
+        record_type: "service"
+        description_status: "ai_inferred"
+
+      # --- その他/特殊コード ---
+      M046:
+        name: "その他"
+        description: "上記いずれの分類にも該当しない修理データ。本コード体系の見直し検討対象。"
+        record_type: "failure"
+        is_special: true
+        description_status: "ai_inferred"
+
+      M_UNK:
+        name: "判定不能"
+        description: "情報不足等で分類できない修理データ。コメントが極端に短い、内容が抽象的等の場合。"
+        record_type: "unknown"
+        is_special: true
+        description_status: "verified"
+
+  # ===========================================================================
+  # LENS（交換レンズ）
+  # ===========================================================================
+  LENS:
+    name: "交換レンズ"
+    failure_categories:
+
+      L001:
+        name: "AF作動不具合"
+        description: "レンズのAF駆動不良、AFが作動しない、動作不安定。AFピントズレはL002。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L002:
+        name: "AFピントズレ"
+        description: "AF動作はするがピントが合わない、合焦位置がずれる。AF駆動そのものの不良はL001。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L003:
+        name: "距離目盛ズレ"
+        description: "距離目盛の指示位置と実際のピント位置が一致しない、目盛印字のズレ等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L004:
+        name: "MF作動不具合"
+        description: "マニュアルフォーカスリングの動作不良（重い、軽い、引っ掛かり、動かない等）。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L005:
+        name: "鏡筒ガタ"
+        description: "鏡筒部のガタつき、緩み、固定不良等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L006:
+        name: "SW作動不具合"
+        description: "AF/MF切替スイッチ、ISスイッチ等のレンズ側スイッチ類の動作不良。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L007:
+        name: "絞り作動不具合"
+        description: "絞り羽根の動作不良、絞り値が反映されない、絞り固着、絞り油浸み等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L008:
+        name: "ズーム引掛り/作動不具合"
+        description: "ズームリングの動作不良（重い、軽い、引っ掛かり、動かない、ザラつき等）。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L009:
+        name: "ズーム自重落下"
+        description: "ズームリングが自重で勝手にスライドして焦点距離が変わってしまう不具合。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L010:
+        name: "ズームロック機構不具合"
+        description: "ズームロック機構の動作不良（ロックされない、ロック解除できない等）。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L011:
+        name: "ズーム時ピントズレ"
+        description: "ズーム操作中・後にピントがずれる、ズームトラッキング不良等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L012:
+        name: "通信不良/エラー表示"
+        description: "ボディ・レンズ間の通信エラー、レンズ認識不良、エラーメッセージ表示等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L013:
+        name: "IS：発振/作動不具合"
+        description: "レンズ内手ブレ補正（IS）の駆動不良、補正効果なし、発振（異常振動）、異音等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L014:
+        name: "レボルビング不具合"
+        description: "TS-Eレンズ等のレボルビング（回転）機構の動作不良、固定不良等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L015:
+        name: "ティルト・シフト不具合"
+        description: "TS-Eレンズ等のティルト・シフト機構の動作不良、操作不良等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L016:
+        name: "異音"
+        description: "通常動作中・操作中に異常な音が発生する。原因部位は問わず音そのものを訴える分類。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L017:
+        name: "液晶表示不具合"
+        description: "レンズ搭載の液晶表示部の表示異常。一部の高機能レンズ等が対象。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L018:
+        name: "ビス/部品：外れ・緩み"
+        description: "レンズ外装・内部のビス・部品の脱落、緩み、外れ等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L019:
+        name: "部品はみ出し"
+        description: "本来収まっているはずの部品が外側にはみ出している、突出している等の異常。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L020:
+        name: "付属品：作動/着脱不具合"
+        description: "レンズフード・キャップ等の付属品の動作不良、着脱不良、固着等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L021:
+        name: "三脚座不具合"
+        description: "レンズ三脚座（リング）の不具合（破損、ガタ、回転不良、ネジ穴不良等）。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L022:
+        name: "片ボケ/描写性能不具合"
+        description: "画面の片側だけピンぼけ、左右非対称な描写、解像力低下等の光学性能不良。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L023:
+        name: "光軸ズレ/中心アス・コマ"
+        description: "光軸のズレ、画面中心部の非点収差・コマ収差等の光学的位置決め不良。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L024:
+        name: "ケラレ/周辺光量不足"
+        description: "画面四隅のケラレ（暗くなる）、周辺光量の異常な低下等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L025:
+        name: "ゴースト/フレア"
+        description: "光源の映り込みによるゴースト・フレアが通常以上に発生する不具合。コーティング不良含む。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L026:
+        name: "外観：キズ/汚れ/色違い"
+        description: "レンズ外装のキズ、汚れ、色違い、塗装剥がれ等の外観不良。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L027:
+        name: "白ブツ/クモリ"
+        description: "レンズ内部の白い斑点（白ブツ）、レンズ面のクモリ・曇り等。レンズ清掃不良含む。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L028:
+        name: "レンズ内：ゴミ/キズ/汚れ"
+        description: "レンズ内部（光学系内部）のゴミ・キズ・汚れの混入。製造・組立由来の場合が多い。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L029:
+        name: "コーティング剥がれ"
+        description: "レンズ表面のコーティングの剥がれ、劣化、変色等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L030:
+        name: "コントロールリング不具合"
+        description: "コントロールリング（カスタマイズ可能なリング）の動作不良、認識不良等。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      L031:
+        name: "カビ"
+        description: "レンズ内部・外部のカビ発生。湿気・保管環境起因。"
+        record_type: "failure"
+        description_status: "ai_inferred"
+
+      # --- サービス系（故障ではない）---
+      L032:
+        name: "検査"
+        description: "故障ではなく、お客様依頼またはメーカー判断による検査・点検のみの修理データ。"
+        record_type: "service"
+        description_status: "ai_inferred"
+
+      L033:
+        name: "クリーニング"
+        description: "故障ではなく、清掃・クリーニング作業のみの修理データ。"
+        record_type: "service"
+        description_status: "ai_inferred"
+
+      L034:
+        name: "オーバーホール"
+        description: "故障ではなく、定期メンテナンス・オーバーホール作業の修理データ。"
+        record_type: "service"
+        description_status: "ai_inferred"
+
+      L035:
+        name: "ファームアップ"
+        description: "故障ではなく、ファームウェアアップデート作業のみの修理データ。"
+        record_type: "service"
+        description_status: "ai_inferred"
+
+      # --- その他/特殊コード ---
+      L036:
+        name: "その他"
+        description: "上記いずれの分類にも該当しない修理データ。本コード体系の見直し検討対象。"
+        record_type: "failure"
+        is_special: true
+        description_status: "ai_inferred"
+
+      L_UNK:
+        name: "判定不能"
+        description: "情報不足等で分類できない修理データ。コメントが極端に短い、内容が抽象的等の場合。"
+        record_type: "unknown"
+        is_special: true
+        description_status: "verified"
+
+# =============================================================================
+# 環境要因（製品共通、多値選択）
+# =============================================================================
+environment_factors:
+
+  water:
+    name: "水濡れ・浸水"
+    description: |
+      雨、海水、水こぼし、プール、川、水中等による水分起因の故障。
+      結露と判断できる場合は humidity を優先。
+    keywords:
+      - "水没"
+      - "浸水"
+      - "雨"
+      - "海"
+      - "プール"
+      - "水こぼし"
+      - "水濡れ"
+      - "川"
+    description_status: "verified"
+
+  sand_dust:
+    name: "砂塵・粉塵"
+    description: |
+      砂、ホコリ、粉塵、土埃等の侵入による故障。
+      海岸・砂漠・建設現場等での使用が典型。
+    keywords:
+      - "砂"
+      - "粉塵"
+      - "ホコリ"
+      - "土埃"
+      - "海岸"
+      - "砂浜"
+    description_status: "verified"
+
+  impact:
+    name: "落下・衝撃"
+    description: |
+      落下、ぶつけ、強打等の物理的衝撃による故障。
+      外装の破損痕・歪みは判定の根拠になりやすい。
+    keywords:
+      - "落下"
+      - "落とした"
+      - "ぶつけた"
+      - "衝撃"
+      - "打撲"
+      - "ぶつけ"
+    description_status: "verified"
+
+  heat:
+    name: "高温環境"
+    description: |
+      炎天下、車内放置、夏場の屋外長時間使用等の高温曝露による故障。
+    keywords:
+      - "車内"
+      - "炎天下"
+      - "高温"
+      - "夏場"
+      - "暑い"
+    description_status: "verified"
+
+  cold:
+    name: "低温環境"
+    description: |
+      雪山、冬山、極寒地等の低温環境での使用による故障。
+    keywords:
+      - "低温"
+      - "雪山"
+      - "冬山"
+      - "極寒"
+      - "寒冷"
+      - "雪"
+    description_status: "verified"
+
+  humidity:
+    name: "高湿度・結露"
+    description: |
+      高湿度環境での使用、温度差による結露起因の故障。
+      明らかに液体としての水接触の場合は water を優先。
+    keywords:
+      - "結露"
+      - "湿気"
+      - "高湿度"
+      - "湿った"
+    description_status: "verified"
+
+  none:
+    name: "該当なし"
+    description: |
+      通常使用範囲内、環境要因なし。
+      他のいずれの要因にも該当しない場合に選択。
+      他の要因と同時選択不可。
+    is_special: true
+    description_status: "verified"
+
+  unknown:
+    name: "不明"
+    description: |
+      環境要因の有無が判定できない情報量。
+      コメントに使用環境への言及が一切ない場合等。
+    is_special: true
+    description_status: "verified"
+
+# =============================================================================
+# 再現状況（独立軸、修理者の症状再現確認結果）
+# =============================================================================
+reproduction_statuses:
+
+  reproduced:
+    name: "再現あり"
+    description: |
+      修理者が症状を再現・確認できた。
+      ユーザの訴えを修理現場で実際に確認できたケース。
+    description_status: "verified"
+
+  not_reproduced:
+    name: "再現せず"
+    description: |
+      修理者が確認したが症状を再現できなかった。
+      ユーザの訴えはあるが、現品では症状を確認できなかったケース。
+      コメントに「再現せず」「症状確認できず」「正常動作」等の記述があるもの。
+    keywords:
+      - "再現せず"
+      - "再現なし"
+      - "症状確認できず"
+      - "症状確認されず"
+      - "正常動作"
+      - "問題なし"
+      - "異常なし"
+    description_status: "verified"
+
+  partial:
+    name: "条件付き再現"
+    description: |
+      特定条件下でのみ再現、再現性が低い、間欠的に発生する等。
+      「時々発生」「特定条件下で再現」のような記述。
+    keywords:
+      - "時々"
+      - "間欠"
+      - "条件付き"
+      - "稀に"
+      - "再現性低"
+    description_status: "verified"
+
+  not_attempted:
+    name: "再現確認なし"
+    description: |
+      修理者の再現確認に関する記述がコメントから読み取れない。
+      サービスレコード（検査・クリーニング・OH・ファームアップのみ）の場合もこちら。
+      明示的な再現確認の記述がない場合のデフォルト。
+    description_status: "verified"
+
+# =============================================================================
+# 判定ルール（LLM用の補助情報）
+# =============================================================================
+classification_rules:
+
+  general:
+    - "1分割単位に対し故障現象コードは必ず1つだけ選択"
+    - "環境要因は多値選択可（none と他要因は同時選択不可）"
+    - "修理者の物的所見（水没痕、衝撃痕、砂粒等）は信頼度高"
+    - "内部コメント[I1][I2]は補足情報として参考"
+
+  # ユーザ視点・修理者視点の2軸分類ルール
+  dual_perspective:
+    overview: |
+      1分割単位に対し、ユーザ視点と修理者視点の2つの分類結果を出力する。
+      これにより「ユーザ申告 vs 実際の故障」のギャップ分析が可能になる。
+
+    user_perspective:
+      description: "ユーザが何の故障だと感じているか（受付時点の認識）"
+      input_scope: "ユーザコメント[U]のみ"
+      strict_rules:
+        - "ユーザコメント[U]だけを根拠とすること"
+        - "修理者コメント[R]、内部コメント[I1][I2]は完全に無視"
+        - "「修理者がそう言っているから」という根拠は使わない"
+        - "ユーザの訴えがあいまいな場合、推測ではなくM_UNK/L_UNKに分類"
+        - "ユーザコメントが空欄の場合はM_UNK/L_UNK"
+
+    repair_perspective:
+      description: "実際の故障内容（修理者所見ベース）"
+      input_scope: "全情報[U][R][I1][I2]を使用"
+      rules:
+        - "ユーザコメントと修理者コメントが食い違う場合、修理者を優先"
+        - "修理者コメントが空欄の場合、ユーザコメントベースで判定"
+        - "再現せずの場合: ユーザ訴えの分類をそのまま入れる（情報保持のため）"
+
+  # 再現せずケースの処理ルール
+  reproduction_handling:
+    - "reproduction_status=not_reproduced の場合、repair_perspective.failure_category_code は user_perspective と同じコードを入れる"
+    - "理由: 「ユーザは○○と訴えたが再現せず」という分析を可能にするため"
+    - "reproduction_status の判定根拠は repair_perspective の evidence と分けて記録"
+    - "サービスレコード（record_type=service）の reproduction_status は通常 not_attempted"
+
+  # サービスレコード処理ルール
+  service_records:
+    - "record_type=service のレコード（検査/クリーニング/OH/FU）は環境要因を unknown または none に設定"
+    - "サービスレコードの reproduction_status は通常 not_attempted"
+    - "サービスレコードでもユーザ視点の分類は試みる（受付時の意図を記録）"
+
+  # メーカー責任判定ルール
+  responsibility_aware:
+    - "センサー内/外、ファインダー内/外の判定で迷ったら、外側（メーカー責任外）に倒す"
+    - "明確な根拠がある場合のみ内側（メーカー責任）を選択"
+    - "user_perspective と repair_perspective の両方でこのルールを適用"
+
+# =============================================================================
+# 出力スキーマ（参考: Difyからの期待出力フォーマット）
+# =============================================================================
+output_schema_reference:
+  description: |
+    Difyの2回目LLMコールから期待される出力フォーマット。
+    1分割単位ごとに以下の構造で出力すること。
+
+  example: |
+    {
+      "repair_id": "R12345",
+      "sub_id": 1,
+
+      "user_perspective": {
+        "failure_category_code": "M005",
+        "confidence": 0.85,
+        "evidence": "ユーザ「ピントが合わない」より",
+        "insufficient_info": false
+      },
+
+      "repair_perspective": {
+        "failure_category_code": "M005",
+        "confidence": 0.95,
+        "evidence": "修理者「AF精度確認、若干の調整実施」より",
+        "insufficient_info": false
+      },
+
+      "reproduction_status": "reproduced",
+      "reproduction_evidence": "修理者「症状確認、再現あり」より",
+      "reproduction_confidence": 0.9,
+
+      "environment_factors": ["water"],
+      "environment_evidence_source": {"water": "user"},
+      "environment_evidence": {"water": "ユーザ「雨に濡れた」より"},
+      "environment_confidence": {"water": 0.7}
+    }

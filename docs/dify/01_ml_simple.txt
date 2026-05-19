@@ -1,0 +1,21 @@
+# Dify テスト実行画面用入力値: 01_ml_simple
+
+## records_json フィールド（段落型、複数行コピペ可）
+[
+  {
+    "repair_id": "TEST_ML_001",
+    "sub_id": 1,
+    "user_text": "AFが効きません",
+    "user_context": "",
+    "repair_text": "AFユニット交換にて復旧",
+    "repair_context": "",
+    "internal_1": "",
+    "internal_2": ""
+  }
+]
+
+## n_records フィールド
+1
+
+## product_type フィールド
+ML

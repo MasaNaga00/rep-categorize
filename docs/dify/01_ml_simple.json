@@ -1,0 +1,9 @@
+{
+  "inputs": {
+    "records_json": "[\n  {\n    \"repair_id\": \"TEST_ML_001\",\n    \"sub_id\": 1,\n    \"user_text\": \"AFが効きません\",\n    \"user_context\": \"\",\n    \"repair_text\": \"AFユニット交換にて復旧\",\n    \"repair_context\": \"\",\n    \"internal_1\": \"\",\n    \"internal_2\": \"\"\n  }\n]",
+    "n_records": 1,
+    "product_type": "ML"
+  },
+  "response_mode": "blocking",
+  "user": "test_user"
+}

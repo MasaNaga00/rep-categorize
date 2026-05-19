@@ -1,0 +1,22 @@
+# 環境変数（APIキー等の機密情報）
+.env
+
+# Pythonキャッシュ
+__pycache__/
+*.pyc
+*.pyo
+
+# pytestキャッシュ
+.pytest_cache/
+
+# 一時的な実行成果物
+outputs/
+!outputs/dify_prompts/  # ただしDify貼り付け用ファイルは追跡
+
+# Notebookチェックポイント
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+*.swp
