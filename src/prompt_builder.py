@@ -90,15 +90,16 @@ REQUIRED_RECORD_KEYS = {
     "repair_id", "sub_id",
     "user_text", "user_context",
     "repair_text", "repair_context",
-    "internal_1", "internal_2",
 }
 
 # JSON出力時のキー順序（LLMが読みやすい順）
+# 注: internal_1 / internal_2 はトークン節約のため Dify に送らない方針
+#     （8割がノイズで、有用情報は repair_text に集約されているため）
+#     split_full.parquet には保持される。
 RECORD_KEY_ORDER = [
     "repair_id", "sub_id",
     "user_text", "user_context",
     "repair_text", "repair_context",
-    "internal_1", "internal_2",
 ]
 
 # Dify がユーザプロンプト内で参照する変数名（プレースホルダ）

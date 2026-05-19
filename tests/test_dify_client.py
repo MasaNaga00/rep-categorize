@@ -62,19 +62,16 @@ def sample_records():
             "repair_id": "R001", "sub_id": 1,
             "user_text": "AFが効きません", "user_context": "",
             "repair_text": "AFユニット交換", "repair_context": "",
-            "internal_1": "", "internal_2": "",
         },
         {
             "repair_id": "R002", "sub_id": 1,
             "user_text": "電源入らず", "user_context": "",
             "repair_text": "電池接点清掃", "repair_context": "",
-            "internal_1": "", "internal_2": "",
         },
         {
             "repair_id": "R003", "sub_id": 1,
             "user_text": "シャッター不良", "user_context": "",
             "repair_text": "シャッターブロック交換", "repair_context": "",
-            "internal_1": "", "internal_2": "",
         },
     ]
 

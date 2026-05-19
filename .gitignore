@@ -8,3 +8,9 @@ wheels/
 
 # Virtual environments
 .venv
+
+# フォルダを除外
+退避用/
+
+# ファイルを除外
+.env

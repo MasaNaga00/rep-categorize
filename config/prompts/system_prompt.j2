@@ -26,8 +26,6 @@
 - `user_context` (string): ユーザコメントの前置き情報（エラーコード等の参考情報、空可）
 - `repair_text` (string): 修理者コメントの本文（修理者の所見・対応）
 - `repair_context` (string): 修理者コメントの前置き情報（修理状況の補足、空可）
-- `internal_1` (string): 内部コメント1（補足情報、空可）
-- `internal_2` (string): 内部コメント2（補足情報、空可）
 
 空文字列のフィールドは情報なしとして扱ってください。
 
@@ -38,7 +36,7 @@
 **ユーザコメントだけ**を根拠に、ユーザが何の故障だと感じているかを判定。
 
 入力スコープ: `user_text` + `user_context` のみ
-**`repair_text`、`repair_context`、`internal_1`、`internal_2` は完全に無視すること。**
+**`repair_text`、`repair_context` は完全に無視すること。**
 
 判定ルール:
 - ユーザが直接訴えている症状を最優先で分類
@@ -51,12 +49,11 @@
 
 **全情報**を使い、実際の故障内容を判定。
 
-入力スコープ: `user_text` + `user_context` + `repair_text` + `repair_context` + `internal_1` + `internal_2`
+入力スコープ: `user_text` + `user_context` + `repair_text` + `repair_context`
 
 判定ルール:
 - ユーザコメントと修理者コメントが食い違う場合、修理者を優先
 - 修理者の物的所見（水没痕、衝撃痕、砂粒等）は信頼度高
-- 内部コメントは補足情報として参考
 - 再現せずの場合（タスク3で `not_reproduced`）は、ユーザ視点の分類と同じコードを入れる
 
 ### タスク3: 再現状況の判定

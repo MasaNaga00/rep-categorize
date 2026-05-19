@@ -63,8 +63,6 @@ def sample_record_full():
         "user_context": "H111",
         "repair_text": "AFユニット交換",
         "repair_context": "保証期間内",
-        "internal_1": "顧客優先",
-        "internal_2": "",
     }
 
 
@@ -77,8 +75,6 @@ def sample_record_minimal():
         "user_context": "",
         "repair_text": "",
         "repair_context": "",
-        "internal_1": "",
-        "internal_2": "",
     }
 
 
@@ -245,18 +241,23 @@ class TestBuildUserMessageForRecords:
             builder.build_user_message_for_records([bad_record])
 
     def test_extra_keys_filtered_out(self, builder):
-        """余計なキー（product_type 等）はJSONに含まれない。"""
+        """余計なキー（product_type, internal_1/2 等）はJSONに含まれない。"""
         record = {
             "repair_id": "R001", "sub_id": 1,
             "user_text": "test", "user_context": "",
             "repair_text": "test", "repair_context": "",
-            "internal_1": "", "internal_2": "",
             "product_type": "ML",  # 余計なキー
             "split_info": "no_markers",  # split.py 由来の余計なキー
+            "internal_1": "内部メモ", "internal_2": "備考",  # Dify非送信フィールド
         }
         msg = builder.build_user_message_for_records([record])
         assert "product_type" not in msg
         assert "split_info" not in msg
+        # internal_1/2 は Dify に送らない方針（トークン節約のため）
+        assert "internal_1" not in msg
+        assert "internal_2" not in msg
+        assert "内部メモ" not in msg
+        assert "備考" not in msg
 
     def test_json_is_valid(self, builder, sample_record_full):
         """生成された JSON が valid な JSON である。"""
